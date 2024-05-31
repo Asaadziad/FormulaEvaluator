@@ -6,4 +6,3 @@ to handle this type of operations.
 
 # Screenshots
 
-![alt](https://imgur.com/J3n43QN)
