@@ -10,6 +10,9 @@ namespace FormulaEvaluator {
     public class Parser {
         List<(Token, object? v)> Tokens;
         int pos;
+
+        
+
         public class Expr {
             double Val;
             string? SVal;
@@ -49,7 +52,57 @@ namespace FormulaEvaluator {
             
         } 
 
+        public class NumberExpr: Expr {
+            double Val;            
         
+            public NumberExpr(double val){
+                this.Val = val;
+            }
+            public override object? Eval(JObject storage) { 
+                 
+                return Val;
+            }
+            
+        }
+        public class StringExpr: Expr {
+            string? Val; 
+            public StringExpr(string val){
+                Val = val;
+            }
+            public override object? Eval(JObject storage) {  
+                return Val;
+            }
+        }
+
+        public class VarExpr: Expr {
+            enum VarType {
+                STRING_TYPE,
+                DOUBLE_TYPE,
+            };
+            string VarName; 
+            Expr   ValExpr;           
+        
+            public VarExpr(string name, Expr e) {
+                VarName = name;
+                ValExpr = e;
+            }
+        
+            public override object? Eval(JObject storage)
+            {
+                object? vExpr = ValExpr != null ? ValExpr.Eval(storage) : null;
+                if(!storage.ContainsKey(VarName)){
+                    storage[VarName] = vExpr != null ? vExpr.ToString() : "";
+                }
+                
+                if(ValExpr == null){
+                    
+                    return storage[VarName.ToString()].ToString();
+                } else {
+                    storage[VarName] = vExpr.GetType() == typeof(String) ? vExpr.ToString() : double.Parse(vExpr?.ToString());
+                    return vExpr;
+                }
+            } 
+        }
 
         public class BinaryExpr: Expr {
             Expr lhs;
@@ -75,22 +128,29 @@ namespace FormulaEvaluator {
             public override object? Eval(JObject storage)
             {
                object? l_object = lhs.Eval(storage);
-               object? r_object = rhs.Eval(storage);
+               object? r_object = rhs?.Eval(storage);
                bool is_string_type = false;
-               if(l_object?.GetType() == typeof(String) && !storage.ContainsKey(l_object?.ToString())){       
+               
+               double outVal;
+               if(l_object?.GetType() == typeof(String)
+                    && !double.TryParse(l_object?.ToString(), out outVal)){       
                   is_string_type = true;
                } 
               
                 switch (op) { 
-                    case Token.Div:   return is_string_type ? l_object : double.Parse(l_object.ToString()) / double.Parse(r_object.ToString());
-                    case Token.Mul:   return is_string_type ? l_object : double.Parse(l_object.ToString()) * double.Parse(r_object.ToString());
-                    case Token.Plus:  return is_string_type ? l_object?.ToString() + r_object?.ToString() : double.Parse(l_object.ToString()) + double.Parse(r_object.ToString());
-                    case Token.Minus: return is_string_type ? l_object : double.Parse(l_object.ToString()) - double.Parse(r_object.ToString());
-                    case Token.Equal: {
-                        Console.WriteLine("R_OBJECT: " + r_object.ToString());
-                        storage[l_object?.ToString()] = r_object?.ToString(); 
-                        return storage[l_object?.ToString()]; 
+                    case Token.Div: {  
+                        
+                        return is_string_type ? l_object : double.Parse(l_object.ToString()) / double.Parse(r_object.ToString());
                     }
+                    case Token.Mul:  {
+                        
+                        return is_string_type ? l_object : double.Parse(l_object.ToString()) * double.Parse(r_object.ToString());
+                    }
+                    case Token.Plus: {
+                        
+                        return is_string_type && l_object?.ToString() != "" ? l_object?.ToString() + r_object?.ToString() : double.Parse(l_object?.ToString() == "" ? "0" : l_object?.ToString()) + double.Parse(r_object?.ToString() == "" ? "0" : r_object?.ToString());
+                    }
+                    case Token.Minus: return is_string_type ? l_object : double.Parse(l_object.ToString()) - double.Parse(r_object.ToString()); 
                 }
                 return null;
             }
@@ -109,28 +169,36 @@ namespace FormulaEvaluator {
 
 
         public Expr ParseVar(){
-            Expr var_name_lhs = new Expr(this.Tokens[this.pos].v?.ToString());
+            string varName = this.Tokens[this.pos].v?.ToString();
             
             Consume(Token.Var);
             if(this.Tokens[this.pos].Item1 == Token.Equal) {
                 Consume(Token.Equal);
                 Expr rhs = ParseExpr();
                 
-                return new BinaryExpr(var_name_lhs, Token.Equal, rhs);
+                return new VarExpr(varName, rhs);
             }
-           return var_name_lhs; 
+
+            
+           return new VarExpr(varName, null); 
         }
         public Expr ParsePrimary(){
             var current_token = this.Tokens[this.pos].Item1;
-           
+        
             switch (current_token){
+                case Token.LParen: {
+                    return ParseParen();
+                }
                 case Token.Number:{
-                    Expr e = new Expr(double.Parse(this.Tokens[this.pos].v.ToString()));
+                    Expr e = new NumberExpr(double.Parse(this.Tokens[this.pos].v.ToString()));
+                    
                     Consume(Token.Number);
                     return e;
                 }
                 case Token.String: {
-                    return null;
+                    Expr e = new StringExpr(this.Tokens[this.pos].v.ToString());
+                    Consume(Token.String);
+                    return e;
                 }
                 case Token.Var: {
                     return ParseVar();
@@ -140,17 +208,19 @@ namespace FormulaEvaluator {
         } 
         public Expr ParseBinaryMul(){
             Expr lhs = ParsePrimary();
+            
             var current_token = this.Tokens[this.pos].Item1;
+            
             switch(current_token) {
                 case Token.Div:{
                     Consume(current_token);
-                    Expr rhs = ParsePrimary();
+                    Expr rhs = ParseBinaryMul();
                     return new BinaryExpr(lhs, current_token, rhs);
                 }
                 
                 case Token.Mul:{
                     Consume(current_token);
-                    Expr rhs = ParsePrimary();
+                    Expr rhs = ParseBinaryMul();
                     return new BinaryExpr(lhs, current_token, rhs);
                 }
                 default: break;
@@ -163,14 +233,14 @@ namespace FormulaEvaluator {
             var current_token = this.Tokens[this.pos].Item1;
             switch(current_token) {
                 case Token.Plus:{
-                    Consume(current_token);
-                    Expr rhs = ParseBinaryMul();
+                    Consume(Token.Plus);
+                    Expr rhs = ParseBinaryPlus();
                     return new BinaryExpr(lhs, current_token, rhs);
                 }
                 
                 case Token.Minus:{
-                    Consume(current_token);
-                    Expr rhs = ParseBinaryMul();
+                    Consume(Token.Minus);
+                    Expr rhs = ParseBinaryPlus();
                     return new BinaryExpr(lhs, current_token, rhs);
                 }
                 default: break;
@@ -180,11 +250,13 @@ namespace FormulaEvaluator {
             
         }
         public Expr ParseExpr(){
+            
             return ParseBinaryPlus();
         }
         public Expr ParseParen(){
             Consume(Token.LParen);
             Expr current = ParseExpr();
+            
             Consume(Token.RParen);
             return current;
         }
@@ -192,6 +264,7 @@ namespace FormulaEvaluator {
             if(this.Tokens[this.pos].Item1 == tok) {
                 pos++;
             } else {
+                
                 throw new Exception("Expected "+ tok + " Found instead " + this.Tokens[this.pos].Item1);
             }
         }
@@ -203,9 +276,13 @@ namespace FormulaEvaluator {
 
         public void Parse(JObject storage){
             while(this.pos < this.Tokens.Count()){ 
+                Console.WriteLine(storage);
+                Console.WriteLine("----------------------------");
                 Expr root = ParseExpr();
-                Console.WriteLine("Eval : {0}",root?.Eval(storage)?.ToString()); 
-                //Console.WriteLine(storage);
+                root?.Eval(storage);
+                Console.WriteLine("----------------------------");
+                Console.WriteLine(storage);
+                
                 pos++;
             }
         }   
