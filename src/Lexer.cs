@@ -10,6 +10,7 @@ namespace FormulaEvaluator {
         Mul,
         Div,
         String,
+        Path,
         LParen,
         RParen,
         EOF,
@@ -62,6 +63,25 @@ namespace FormulaEvaluator {
                     var value = input.Substring(start, pos - start);
                     pos++;
                     yield return (Token.String, value);
+                    pos++;
+                    continue;
+                }
+
+                if(c == '<' && input[pos + 1] == '<'){
+                    var start = pos + 2;
+                    pos += 2;
+                    
+                    while(pos < input.Length && (input[pos] != '>')){
+                        pos++;
+                    }
+
+                    if(pos >= input.Length){
+                        throw new Exception("Undefined path");
+                    }
+
+                    var value = input.Substring(start, pos - start);
+                    pos += 2;
+                    yield return (Token.Path, value);
                     pos++;
                     continue;
                 }

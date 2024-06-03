@@ -31,7 +31,7 @@ namespace FormulaEvaluator {
                 }
             }
 
-            virtual public object? Eval(JObject storage) {
+            virtual public object? Eval(JToken source,JObject storage) {
                 if(SVal != null && storage.ContainsKey(SVal)) {
                     //Console.WriteLine("SVal : {0}, Storage[SVal]: {1}",SVal,storage[SVal]?.ToString());
                     return storage[SVal].ToString();
@@ -52,13 +52,59 @@ namespace FormulaEvaluator {
             
         } 
 
+        public class PathExpr: Expr {
+            string? Path;
+            Expr    ValExpr;
+            public PathExpr(string path, Expr val){
+                Path = path;
+                ValExpr  = val;
+            }
+            public override object? Eval(JToken source, JObject storage)
+            {
+                object? vExpr = ValExpr != null ? ValExpr.Eval(source, storage) : null; 
+                string[] paths = Path?.ToString().Split('.');
+                string colName = paths[paths.Length - 1]; 
+                if(ValExpr == null){
+                    if(paths[0].Contains("query_")) {
+                        if(storage.ContainsKey(paths[0])){ 
+                            return storage[paths[0]][paths[paths.Length - 2].ToString()][colName];
+                        }
+                    } else {
+                        return getValueByPath(source, Path.ToString());
+                    }
+                } else {
+                    if(paths[0].Contains("_query")){
+                        if(storage.ContainsKey(paths[0])){ 
+                            storage[paths[0]][paths[paths.Length - 2].ToString()][colName] = vExpr.GetType() == typeof(String) ? vExpr.ToString() : double.Parse(vExpr.ToString());
+                        }
+                    } else {
+                         
+                        string colname = paths[paths.Length - 1]; 
+                        if(paths.Length > 2) {
+                            if(source.ToObject<JObject>().ContainsKey(paths[paths.Length - 2] + "_SUBFORM")){
+                                source[paths[paths.Length - 2] + "_SUBFORM"].FirstOrDefault()[colname] = vExpr.GetType() == typeof(String) ? vExpr.ToString() : double.Parse(vExpr.ToString());
+                            }
+                        } else {
+                            if (colname == "") return "";
+                            if(!source.ToObject<JObject>().ContainsKey(colname)){ 
+                                return "";  
+                            }
+
+                            source[colname] = vExpr.GetType() == typeof(String) ? vExpr.ToString() : double.Parse(vExpr.ToString());
+                        }
+                    }
+                }
+                return null;
+            }
+        
+        }
         public class NumberExpr: Expr {
             double Val;            
         
             public NumberExpr(double val){
                 this.Val = val;
             }
-            public override object? Eval(JObject storage) { 
+            public override object? Eval(JToken source,JObject storage) { 
                  
                 return Val;
             }
@@ -69,7 +115,7 @@ namespace FormulaEvaluator {
             public StringExpr(string val){
                 Val = val;
             }
-            public override object? Eval(JObject storage) {  
+            public override object? Eval(JToken source,JObject storage) {  
                 return Val;
             }
         }
@@ -87,15 +133,13 @@ namespace FormulaEvaluator {
                 ValExpr = e;
             }
         
-            public override object? Eval(JObject storage)
+            public override object? Eval(JToken source,JObject storage)
             {
-                object? vExpr = ValExpr != null ? ValExpr.Eval(storage) : null;
+                object? vExpr = ValExpr != null ? ValExpr.Eval(source, storage) : null;
                 if(!storage.ContainsKey(VarName)){
                     storage[VarName] = vExpr != null ? vExpr.ToString() : "";
                 }
-                
                 if(ValExpr == null){
-                    
                     return storage[VarName.ToString()].ToString();
                 } else {
                     storage[VarName] = vExpr.GetType() == typeof(String) ? vExpr.ToString() : double.Parse(vExpr?.ToString());
@@ -125,26 +169,24 @@ namespace FormulaEvaluator {
                 } 
             }
 
-            public override object? Eval(JObject storage)
+            public override object? Eval(JToken source,JObject storage)
             {
-               object? l_object = lhs.Eval(storage);
-               object? r_object = rhs?.Eval(storage);
-               bool is_string_type = false;
-               
-               double outVal;
-               if(l_object?.GetType() == typeof(String)
-                    && !double.TryParse(l_object?.ToString(), out outVal)){       
+                object? l_object = lhs.Eval(source, storage);
+                object? r_object = rhs?.Eval(source, storage);
+                bool is_string_type = false;
+                double outVal;
+
+                if(l_object?.GetType() == typeof(String)
+                    && (!double.TryParse(l_object?.ToString(), out outVal) || l_object.ToString()[0] == '0') && !l_object.ToString().Contains(".")){       
                   is_string_type = true;
-               } 
-              
+                } 
                 switch (op) { 
-                    case Token.Div: {  
-                        
-                        return is_string_type ? l_object : double.Parse(l_object.ToString()) / double.Parse(r_object.ToString());
+                    case Token.Div: {   
+                        return is_string_type ? l_object : double.Parse(l_object?.ToString()) / double.Parse(r_object.ToString());
                     }
-                    case Token.Mul:  {
-                        
-                        return is_string_type ? l_object : double.Parse(l_object.ToString()) * double.Parse(r_object.ToString());
+                    case Token.Mul:  {   
+                       
+                        return is_string_type ? l_object : double.Parse(l_object?.ToString()) * double.Parse(r_object.ToString());
                     }
                     case Token.Plus: {
                         
@@ -178,13 +220,11 @@ namespace FormulaEvaluator {
                 
                 return new VarExpr(varName, rhs);
             }
-
-            
            return new VarExpr(varName, null); 
         }
+
         public Expr ParsePrimary(){
             var current_token = this.Tokens[this.pos].Item1;
-        
             switch (current_token){
                 case Token.LParen: {
                     return ParseParen();
@@ -203,14 +243,24 @@ namespace FormulaEvaluator {
                 case Token.Var: {
                     return ParseVar();
                 }
+                case Token.Path: {
+                    string path = this.Tokens[this.pos].v.ToString();
+                    Consume(Token.Path);
+                    if(this.Tokens[this.pos].Item1 == Token.Equal) {
+                        Consume(Token.Equal);
+                        Expr rhs = ParseExpr();
+
+                        return new PathExpr(path, rhs);
+                        
+                    }
+                    return new PathExpr(path, null);
+                }
             } 
             return null;
         } 
         public Expr ParseBinaryMul(){
             Expr lhs = ParsePrimary();
-            
             var current_token = this.Tokens[this.pos].Item1;
-            
             switch(current_token) {
                 case Token.Div:{
                     Consume(current_token);
@@ -245,12 +295,9 @@ namespace FormulaEvaluator {
                 }
                 default: break;
             }
-
-            return lhs;
-            
+            return lhs;  
         }
         public Expr ParseExpr(){
-            
             return ParseBinaryPlus();
         }
         public Expr ParseParen(){
@@ -274,17 +321,33 @@ namespace FormulaEvaluator {
             this.pos = 0;
         }
 
-        public void Parse(JObject storage){
-            while(this.pos < this.Tokens.Count()){ 
+        public void Parse(JToken source, JObject storage){
+            while(this.pos < this.Tokens.Count()){  
                 Console.WriteLine(storage);
-                Console.WriteLine("----------------------------");
                 Expr root = ParseExpr();
-                root?.Eval(storage);
-                Console.WriteLine("----------------------------");
+                root?.Eval(source, storage);
                 Console.WriteLine(storage);
-                
+                Console.WriteLine(source);
                 pos++;
             }
+        }
+
+        public static string getValueByPath(JToken valuejs, string path){
+            string[] c_path = path.Split('.'); 
+            string colname = c_path[c_path.Length - 1]; 
+            if(c_path.Length > 2) {
+                if(valuejs.ToObject<JObject>().ContainsKey(c_path[c_path.Length - 2] + "_SUBFORM")){
+                    return valuejs[c_path[c_path.Length - 2] + "_SUBFORM"].FirstOrDefault()[colname].ToString();
+                }
+            } else {
+                if (colname == "") return "";
+                if(!valuejs.ToObject<JObject>().ContainsKey(colname)){ 
+                    return "";  
+                }
+                
+                return valuejs[colname].ToString();
+            }
+            return "";
         }   
     }
 }
