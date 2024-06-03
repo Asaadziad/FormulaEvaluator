@@ -1,6 +1,6 @@
 
 namespace FormulaEvaluator {
-    public enum Tokens{
+    public enum Token {
         Identifier,
         Number,
         Var,
@@ -17,7 +17,7 @@ namespace FormulaEvaluator {
     }
 
     public static class Lexer {
-        public static IEnumerable<(Tokens, object? value)> ParseTokens(string input){
+        public static IEnumerable<(Token, object? value)> ParseTokens(string input){
             var pos = 0;
             while(pos < input.Length){
                 
@@ -33,10 +33,7 @@ namespace FormulaEvaluator {
                         pos++;
                     }
                     var value = input.Substring(start, pos - start);
-                    var token = value switch {
-                        "var-" => Tokens.Var,
-                        _ => Tokens.Identifier 
-                    };
+                    var token = value.Contains("var_") ? Token.Var : Token.Identifier;
                     yield return (token, value);
                     continue;
                 }
@@ -47,7 +44,7 @@ namespace FormulaEvaluator {
                         pos++;
                     }
                     var value = input.Substring(start, pos - start);
-                    yield return (Tokens.Number, int.Parse(value));
+                    yield return (Token.Number, int.Parse(value));
                     continue;
                 }
 
@@ -64,26 +61,26 @@ namespace FormulaEvaluator {
 
                     var value = input.Substring(start, pos - start);
                     pos++;
-                    yield return (Tokens.String, value);
+                    yield return (Token.String, value);
                     pos++;
                     continue;
                 }
 
                 yield return c switch {
-                    '=' => (Tokens.Equal, '='),
-                    '+' => (Tokens.Plus, '+'),
-                    '-' => (Tokens.Minus, '-'),
-                    '*' => (Tokens.Mul, '*'),
-                    '/' => (Tokens.Div, '/'),
-                    '(' => (Tokens.LParen, '('),
-                    ')' => (Tokens.RParen, ')'),
-                    _ => (Tokens.ILLEGAL , c)
+                    '=' => (Token.Equal, '='),
+                    '+' => (Token.Plus, '+'),
+                    '-' => (Token.Minus, '-'),
+                    '*' => (Token.Mul, '*'),
+                    '/' => (Token.Div, '/'),
+                    '(' => (Token.LParen, '('),
+                    ')' => (Token.RParen, ')'),
+                    _ => (Token.ILLEGAL , c)
                 };
 
                 pos++;
             }
 
-            yield return (Tokens.EOF, null);
+            yield return (Token.EOF, null);
         } 
     }
 }
