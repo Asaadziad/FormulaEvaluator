@@ -5,4 +5,4 @@ the values of those variables - those values can be a path for another object fo
 to handle this type of operations.
 
 # Screenshots
-
+![architecture](https://raw.githubusercontent.com/Asaadziad/FormulaEvaluator/main/images/formulaEvaluator.png)
