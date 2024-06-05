@@ -66,37 +66,46 @@ namespace FormulaEvaluator {
                 string colName = paths[paths.Length - 1]; 
                 if(ValExpr == null){
                     if(paths[0].Contains("query_")) {
-                        if(storage.ContainsKey(paths[0])){ 
-                            return storage[paths[0]][paths[paths.Length - 2].ToString()][colName];
+                        if(storage.ContainsKey(paths[0])){
+                            if(paths.Length > 2) {
+                                return storage[paths[0]][paths[paths.Length - 2].ToString()][colName];
+                            } else {
+                                return storage[paths[0]][colName];
+                            }
+                            
                         }
                     } else {
                         return getValueByPath(source, Path.ToString());
                     }
                 } else {
+                    JToken input = (vExpr?.GetType() == typeof(String) ? vExpr?.ToString() : double.Parse(vExpr != null ? vExpr.ToString() : "0"));
                     if(paths[0].Contains("_query")){
-                        if(storage.ContainsKey(paths[0])){ 
+                        setValueByPath(storage, input, Path);
+                        /*if(storage.ContainsKey(paths[0])){ 
                             storage[paths[0]][paths[paths.Length - 2].ToString()][colName] = vExpr.GetType() == typeof(String) ? vExpr.ToString() : double.Parse(vExpr.ToString());
-                        }
+                        }*/
                     } else {
-                         
-                        string colname = paths[paths.Length - 1]; 
+                         setValueByPath(source, input, Path);
+                        /*string colname = paths[paths.Length - 1]; 
                         if(paths.Length > 2) {
                             if(source.ToObject<JObject>().ContainsKey(paths[paths.Length - 2] + "_SUBFORM")){
-                                source[paths[paths.Length - 2] + "_SUBFORM"].FirstOrDefault()[colname] = vExpr.GetType() == typeof(String) ? vExpr.ToString() : double.Parse(vExpr.ToString());
+                                if(source[paths[paths.Length - 2] + "_SUBFORM"].Count() > 1){
+                                    for(int k = 0; k < source[paths[paths.Length - 2] + "_SUBFORM"].Count();k++){
+                                        source[paths[paths.Length - 2] + "_SUBFORM"][k][colname] = vExpr.GetType() == typeof(String) ? vExpr.ToString() : double.Parse(vExpr.ToString());
+                                    }   
+                                } else if(source[paths[paths.Length - 2] + "_SUBFORM"].Count() == 1) {
+                                    source[paths[paths.Length - 2] + "_SUBFORM"].FirstOrDefault()[colname] = vExpr?.GetType() == typeof(String) ? vExpr?.ToString() : double.Parse(vExpr != null ? vExpr.ToString() : "0");
+                                }  
                             }
                         } else {
                             if (colname == "") return "";
-                            if(!source.ToObject<JObject>().ContainsKey(colname)){ 
-                                return "";  
-                            }
-
                             source[colname] = vExpr.GetType() == typeof(String) ? vExpr.ToString() : double.Parse(vExpr.ToString());
-                        }
+                            
+                        }*/
                     }
                 }
                 return null;
-            }
-        
+            } 
         }
         public class NumberExpr: Expr {
             double Val;            
@@ -171,28 +180,33 @@ namespace FormulaEvaluator {
 
             public override object? Eval(JToken source,JObject storage)
             {
-                object? l_object = lhs.Eval(source, storage);
+                object? l_object = lhs?.Eval(source, storage);
                 object? r_object = rhs?.Eval(source, storage);
                 bool is_string_type = false;
                 double outVal;
 
                 if(l_object?.GetType() == typeof(String)
-                    && (!double.TryParse(l_object?.ToString(), out outVal) || l_object.ToString()[0] == '0') && !l_object.ToString().Contains(".")){       
+                    && (!double.TryParse(l_object?.ToString(), out outVal) || (l_object.ToString()[0] == '0' && l_object.ToString().Length > 1)) && !l_object.ToString().Contains(".")){       
                   is_string_type = true;
                 } 
                 switch (op) { 
                     case Token.Div: {   
                         return is_string_type ? l_object : double.Parse(l_object?.ToString()) / double.Parse(r_object.ToString());
                     }
-                    case Token.Mul:  {   
-                       
+                    case Token.Mul:  {    
                         return is_string_type ? l_object : double.Parse(l_object?.ToString()) * double.Parse(r_object.ToString());
                     }
-                    case Token.Plus: {
-                        
+                    case Token.Plus: { 
                         return is_string_type && l_object?.ToString() != "" ? l_object?.ToString() + r_object?.ToString() : double.Parse(l_object?.ToString() == "" ? "0" : l_object?.ToString()) + double.Parse(r_object?.ToString() == "" ? "0" : r_object?.ToString());
                     }
-                    case Token.Minus: return is_string_type ? l_object : double.Parse(l_object.ToString()) - double.Parse(r_object.ToString()); 
+                    case Token.Minus: {
+                        Console.WriteLine(l_object?.ToString());
+                        
+                        return is_string_type ? l_object : double.Parse(l_object.ToString()) - double.Parse(r_object.ToString()); 
+                    }
+                    case Token.Mod: {
+                        return is_string_type ? l_object : double.Parse(l_object?.ToString()) % double.Parse(r_object.ToString());
+                    }
                 }
                 return null;
             }
@@ -323,31 +337,79 @@ namespace FormulaEvaluator {
 
         public void Parse(JToken source, JObject storage){
             while(this.pos < this.Tokens.Count()){  
-                Console.WriteLine(storage);
+                
                 Expr root = ParseExpr();
-                root?.Eval(source, storage);
-                Console.WriteLine(storage);
-                Console.WriteLine(source);
+                Console.WriteLine(root?.Eval(source, storage));
+                 
                 pos++;
             }
         }
 
         public static string getValueByPath(JToken valuejs, string path){
+            if(path == "") return "";
             string[] c_path = path.Split('.'); 
             string colname = c_path[c_path.Length - 1]; 
-            if(c_path.Length > 2) {
+            JObject valueObject = valuejs.ToObject<JObject>();
+            int len = c_path.Length;
+            if(len == 1){
+                if(valueObject.ContainsKey(colname)){
+                    return valuejs[colname].ToString();
+                } else {
+                    return "";
+                }
+            } 
+            if(len > 2) {
                 if(valuejs.ToObject<JObject>().ContainsKey(c_path[c_path.Length - 2] + "_SUBFORM")){
                     return valuejs[c_path[c_path.Length - 2] + "_SUBFORM"].FirstOrDefault()[colname].ToString();
                 }
-            } else {
+            } else { // we enter if len == 2
                 if (colname == "") return "";
-                if(!valuejs.ToObject<JObject>().ContainsKey(colname)){ 
-                    return "";  
-                }
+                if(valueObject.ContainsKey(c_path[len - 2])){
+                    return valuejs[c_path[len - 2]][colname].ToString();
+                } 
                 
-                return valuejs[colname].ToString();
+                if(valueObject.ContainsKey(colname)){
+                    return valuejs[colname].ToString();
+                }
             }
+
             return "";
-        }   
+        }
+
+        public static void setValueByPath(JToken valuejs,  JToken new_input, string path){
+            if(path == "") return;
+            string[] c_path = path.Split('.'); 
+            string colname = c_path[c_path.Length - 1]; 
+            JObject valueObject = valuejs.ToObject<JObject>();
+            int len = c_path.Length;
+            if(len == 1){
+                if(valueObject.ContainsKey(colname)){
+                    valuejs[colname] = new_input;
+                } else {
+                    return;
+                }
+            } 
+            if(len > 2) {
+                if(valueObject.ContainsKey(c_path[c_path.Length - 2] + "_SUBFORM")){
+                    if(valuejs[c_path[c_path.Length - 2] + "_SUBFORM"].Count() > 1){
+                        for(int k = 0; k < valuejs[c_path[c_path.Length - 2] + "_SUBFORM"].Count();k++){
+                            valuejs[c_path[c_path.Length - 2] + "_SUBFORM"][k][colname] = new_input;
+                        }   
+                    } else if(valuejs[c_path[c_path.Length - 2] + "_SUBFORM"].Count() == 1) {
+                        valuejs[c_path[c_path.Length - 2] + "_SUBFORM"].FirstOrDefault()[colname] = new_input;
+                    } 
+                    
+                }
+            } else { // we enter if len == 2
+                if (colname == "") return;
+                if(valueObject.ContainsKey(c_path[len - 2])){
+                    valuejs[c_path[len - 2]][colname] = new_input;
+                } 
+                
+                if(valueObject.ContainsKey(colname)){
+                    valuejs[colname] = new_input;
+                }
+            }
+        }
     }
 }
