@@ -18,6 +18,8 @@ namespace FormulaEvaluator {
         ILLEGAL
     }
 
+    
+
     public static class Lexer {
         public static IEnumerable<(Token, object? value)> ParseTokens(string input){
             var pos = 0;

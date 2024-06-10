@@ -63,45 +63,23 @@ namespace FormulaEvaluator {
             {
                 object? vExpr = ValExpr != null ? ValExpr.Eval(source, storage) : null; 
                 string[] paths = Path?.ToString().Split('.');
-                string colName = paths[paths.Length - 1]; 
+                 
                 if(ValExpr == null){
                     if(paths[0].Contains("query_")) {
-                        if(storage.ContainsKey(paths[0])){
-                            if(paths.Length > 2) {
-                                return storage[paths[0]][paths[paths.Length - 2].ToString()][colName];
-                            } else {
-                                return storage[paths[0]][colName];
-                            }
-                            
-                        }
+                        return getValueByPath(storage, Path.ToString()); 
                     } else {
+                        if(Path.Contains("DYNAMIC")){
+                            return Dynamic.GetDynamicValue(Path);
+                        }
                         return getValueByPath(source, Path.ToString());
                     }
                 } else {
                     JToken input = (vExpr?.GetType() == typeof(String) ? vExpr?.ToString() : double.Parse(vExpr != null ? vExpr.ToString() : "0"));
                     if(paths[0].Contains("_query")){
                         setValueByPath(storage, input, Path);
-                        /*if(storage.ContainsKey(paths[0])){ 
-                            storage[paths[0]][paths[paths.Length - 2].ToString()][colName] = vExpr.GetType() == typeof(String) ? vExpr.ToString() : double.Parse(vExpr.ToString());
-                        }*/
+                        
                     } else {
-                         setValueByPath(source, input, Path);
-                        /*string colname = paths[paths.Length - 1]; 
-                        if(paths.Length > 2) {
-                            if(source.ToObject<JObject>().ContainsKey(paths[paths.Length - 2] + "_SUBFORM")){
-                                if(source[paths[paths.Length - 2] + "_SUBFORM"].Count() > 1){
-                                    for(int k = 0; k < source[paths[paths.Length - 2] + "_SUBFORM"].Count();k++){
-                                        source[paths[paths.Length - 2] + "_SUBFORM"][k][colname] = vExpr.GetType() == typeof(String) ? vExpr.ToString() : double.Parse(vExpr.ToString());
-                                    }   
-                                } else if(source[paths[paths.Length - 2] + "_SUBFORM"].Count() == 1) {
-                                    source[paths[paths.Length - 2] + "_SUBFORM"].FirstOrDefault()[colname] = vExpr?.GetType() == typeof(String) ? vExpr?.ToString() : double.Parse(vExpr != null ? vExpr.ToString() : "0");
-                                }  
-                            }
-                        } else {
-                            if (colname == "") return "";
-                            source[colname] = vExpr.GetType() == typeof(String) ? vExpr.ToString() : double.Parse(vExpr.ToString());
-                            
-                        }*/
+                        setValueByPath(source, input, Path);
                     }
                 }
                 return null;
@@ -180,6 +158,7 @@ namespace FormulaEvaluator {
 
             public override object? Eval(JToken source,JObject storage)
             {
+                
                 object? l_object = lhs?.Eval(source, storage);
                 object? r_object = rhs?.Eval(source, storage);
                 bool is_string_type = false;
@@ -199,9 +178,7 @@ namespace FormulaEvaluator {
                     case Token.Plus: { 
                         return is_string_type && l_object?.ToString() != "" ? l_object?.ToString() + r_object?.ToString() : double.Parse(l_object?.ToString() == "" ? "0" : l_object?.ToString()) + double.Parse(r_object?.ToString() == "" ? "0" : r_object?.ToString());
                     }
-                    case Token.Minus: {
-                        Console.WriteLine(l_object?.ToString());
-                        
+                    case Token.Minus: { 
                         return is_string_type ? l_object : double.Parse(l_object.ToString()) - double.Parse(r_object.ToString()); 
                     }
                     case Token.Mod: {
@@ -336,7 +313,7 @@ namespace FormulaEvaluator {
         }
 
         public void Parse(JToken source, JObject storage){
-            while(this.pos < this.Tokens.Count()){  
+            while(this.pos < this.Tokens.Count()){ 
                 
                 Expr root = ParseExpr();
                 Console.WriteLine(root?.Eval(source, storage));
@@ -377,17 +354,14 @@ namespace FormulaEvaluator {
         }
 
         public static void setValueByPath(JToken valuejs,  JToken new_input, string path){
-            if(path == "") return;
+            if(path == "") return; 
             string[] c_path = path.Split('.'); 
             string colname = c_path[c_path.Length - 1]; 
             JObject valueObject = valuejs.ToObject<JObject>();
             int len = c_path.Length;
             if(len == 1){
-                if(valueObject.ContainsKey(colname)){
-                    valuejs[colname] = new_input;
-                } else {
-                    return;
-                }
+                valuejs[colname] = new_input;
+                return;
             } 
             if(len > 2) {
                 if(valueObject.ContainsKey(c_path[c_path.Length - 2] + "_SUBFORM")){
@@ -397,18 +371,15 @@ namespace FormulaEvaluator {
                         }   
                     } else if(valuejs[c_path[c_path.Length - 2] + "_SUBFORM"].Count() == 1) {
                         valuejs[c_path[c_path.Length - 2] + "_SUBFORM"].FirstOrDefault()[colname] = new_input;
-                    } 
-                    
+                    }   
                 }
             } else { // we enter if len == 2
                 if (colname == "") return;
                 if(valueObject.ContainsKey(c_path[len - 2])){
                     valuejs[c_path[len - 2]][colname] = new_input;
-                } 
-                
-                if(valueObject.ContainsKey(colname)){
-                    valuejs[colname] = new_input;
-                }
+                    return;
+                }     
+                valuejs[colname] = new_input;   
             }
         }
     }
