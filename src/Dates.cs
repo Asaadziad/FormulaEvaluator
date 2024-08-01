@@ -1,3 +1,6 @@
+using System;
+using System.Linq;
+
 namespace FormulaEvaluator {
     public class Dates {
         public static DateTime AddDays(DateTime date, int count)
@@ -16,6 +19,7 @@ namespace FormulaEvaluator {
         {
             return new DateTime(date.Year, date.Month, 1);
         }
+        
         public static DateTime StartYear(DateTime date)
         {
             int day = date.Day;
@@ -61,18 +65,20 @@ namespace FormulaEvaluator {
         }
 
         public static string GetDynamicDate(string type) {
-            return type switch {
-                "Now" => DateTime.Now.ToString(),
-                "StartWeek" => StartWeek(DateTime.Now).ToString(),
-                "StartMonth" => StartMonth(DateTime.Now).ToString(),
-                "StartYear" => StartWeek(DateTime.Now).ToString(),
-                "StartQuarterly" => StartQuarterly(DateTime.Now).ToString(),
-                "EndWeek" => EndWeek(DateTime.Now).ToString(),
-                "EndMonth" => EndMonth(DateTime.Now).ToString(),
-                "EndYear" => EndWeek(DateTime.Now).ToString(),
-                "EndQuarterly" => EndQuarterly(DateTime.Now).ToString(),
+            switch(type)
+            {
+                case "Now": return DateTime.Now.ToString();
+                case "StartWeek": return StartWeek(DateTime.Now).ToString();
+                case "StartMonth": return StartMonth(DateTime.Now).ToString();
+                case "StartYear": return StartWeek(DateTime.Now).ToString();
+                case "StartQuarterly": return StartQuarterly(DateTime.Now).ToString();
+                case "EndWeek": return EndWeek(DateTime.Now).ToString();
+                case "EndMonth": return EndMonth(DateTime.Now).ToString();
+                case "EndYear": return EndWeek(DateTime.Now).ToString();
+                case "EndQuarterly": return EndQuarterly(DateTime.Now).ToString();
             
             };
+            return "";
         }
     }
 }

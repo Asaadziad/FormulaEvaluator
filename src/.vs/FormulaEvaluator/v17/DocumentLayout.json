@@ -1,17 +1,21 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\win10\\workspace\\github.com\\Asaadziad\\FormulaEvaluator\\src\\",
+  "WorkspaceRootPath": "W:\\github.com\\Asaadziad\\FormulaEvaluator\\src\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{CC06CA20-D691-4408-9A5E-CEB533C30AC1}|FormulaEvaluator.csproj|c:\\users\\win10\\workspace\\github.com\\asaadziad\\formulaevaluator\\src\\eval.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{CC06CA20-D691-4408-9A5E-CEB533C30AC1}|FormulaEvaluator.csproj|w:\\github.com\\asaadziad\\formulaevaluator\\src\\dates.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CC06CA20-D691-4408-9A5E-CEB533C30AC1}|FormulaEvaluator.csproj|solutionrelative:dates.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CC06CA20-D691-4408-9A5E-CEB533C30AC1}|FormulaEvaluator.csproj|w:\\github.com\\asaadziad\\formulaevaluator\\src\\eval.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CC06CA20-D691-4408-9A5E-CEB533C30AC1}|FormulaEvaluator.csproj|solutionrelative:eval.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{CC06CA20-D691-4408-9A5E-CEB533C30AC1}|FormulaEvaluator.csproj|c:\\users\\win10\\workspace\\github.com\\asaadziad\\formulaevaluator\\src\\lexer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{CC06CA20-D691-4408-9A5E-CEB533C30AC1}|FormulaEvaluator.csproj|w:\\github.com\\asaadziad\\formulaevaluator\\src\\lexer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CC06CA20-D691-4408-9A5E-CEB533C30AC1}|FormulaEvaluator.csproj|solutionrelative:lexer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{CC06CA20-D691-4408-9A5E-CEB533C30AC1}|FormulaEvaluator.csproj|c:\\users\\win10\\workspace\\github.com\\asaadziad\\formulaevaluator\\src\\parser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{CC06CA20-D691-4408-9A5E-CEB533C30AC1}|FormulaEvaluator.csproj|w:\\github.com\\asaadziad\\formulaevaluator\\src\\parser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CC06CA20-D691-4408-9A5E-CEB533C30AC1}|FormulaEvaluator.csproj|solutionrelative:parser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
@@ -27,41 +31,52 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "Dates.cs",
+              "DocumentMoniker": "W:\\github.com\\Asaadziad\\FormulaEvaluator\\src\\Dates.cs",
+              "RelativeDocumentMoniker": "Dates.cs",
+              "ToolTip": "W:\\github.com\\Asaadziad\\FormulaEvaluator\\src\\Dates.cs",
+              "RelativeToolTip": "Dates.cs",
+              "ViewState": "AQIAACgAAAAAAAAAAAAwwDIAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-07-07T10:17:03.665Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
               "Title": "Eval.cs",
-              "DocumentMoniker": "C:\\Users\\win10\\workspace\\github.com\\Asaadziad\\FormulaEvaluator\\src\\Eval.cs",
+              "DocumentMoniker": "W:\\github.com\\Asaadziad\\FormulaEvaluator\\src\\Eval.cs",
               "RelativeDocumentMoniker": "Eval.cs",
-              "ToolTip": "C:\\Users\\win10\\workspace\\github.com\\Asaadziad\\FormulaEvaluator\\src\\Eval.cs",
+              "ToolTip": "W:\\github.com\\Asaadziad\\FormulaEvaluator\\src\\Eval.cs",
               "RelativeToolTip": "Eval.cs",
-              "ViewState": "AQIAAAoAAAAAAAAAAAAQwAUAAABYAAAA",
+              "ViewState": "AQIAAAQAAAAAAAAAAAAAAAQAAAABAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2024-06-02T09:43:32.311Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "Lexer.cs",
-              "DocumentMoniker": "C:\\Users\\win10\\workspace\\github.com\\Asaadziad\\FormulaEvaluator\\src\\Lexer.cs",
+              "DocumentMoniker": "W:\\github.com\\Asaadziad\\FormulaEvaluator\\src\\Lexer.cs",
               "RelativeDocumentMoniker": "Lexer.cs",
-              "ToolTip": "C:\\Users\\win10\\workspace\\github.com\\Asaadziad\\FormulaEvaluator\\src\\Lexer.cs",
+              "ToolTip": "W:\\github.com\\Asaadziad\\FormulaEvaluator\\src\\Lexer.cs",
               "RelativeToolTip": "Lexer.cs",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-06-02T09:43:31.421Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-06-02T09:43:31.421Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "Parser.cs",
-              "DocumentMoniker": "C:\\Users\\win10\\workspace\\github.com\\Asaadziad\\FormulaEvaluator\\src\\Parser.cs",
+              "DocumentMoniker": "W:\\github.com\\Asaadziad\\FormulaEvaluator\\src\\Parser.cs",
               "RelativeDocumentMoniker": "Parser.cs",
-              "ToolTip": "C:\\Users\\win10\\workspace\\github.com\\Asaadziad\\FormulaEvaluator\\src\\Parser.cs",
+              "ToolTip": "W:\\github.com\\Asaadziad\\FormulaEvaluator\\src\\Parser.cs",
               "RelativeToolTip": "Parser.cs",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-06-02T09:43:29.231Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-06-02T09:43:29.231Z"
             }
           ]
         }
