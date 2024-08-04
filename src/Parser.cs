@@ -87,21 +87,21 @@ namespace FormulaEvaluator {
                     if(paths[0].Contains("query_") || paths[0].Contains("var_") || paths[0].Contains("dataset_")) {
                         Console.WriteLine("i get it from storage");
 
-                        return getValueByPath(storage, Path.ToString()); 
+                        return Utility.getValueByPath(storage, Path.ToString()); 
                     } else {
                         if(Path.Contains("DYNAMIC")){
                            
                             return Dynamic.GetDynamicValue(Path);
                         }
-                        return getValueByPath(source, Path.ToString());
+                        return Utility.getValueByPath(source, Path.ToString());
                     }
                 } else {
                     JToken input = type == "String" ? vExpr.ToString() : double.Parse(vExpr != null && vExpr.ToString() != "" ? vExpr.ToString() : "0");
                     Console.WriteLine("input: " + input + " type: " + type);
                     if(paths[0].Contains("query_") || paths[0].Contains("var_") || paths[0].Contains("dataset_")){          
-                        setValueByPath(storage, input, Path);
+                        Utility.setValueByPath(storage, input, Path);
                     } else {
-                        setValueByPath(source, input, Path);
+                        Utility.setValueByPath(source, input, Path);
                     }
                     return string.Format("Successfully set column {0} with value {1}", paths.Last(), input);
                 }
@@ -410,180 +410,6 @@ namespace FormulaEvaluator {
             }
             return latest;
         }
-        public static string GetSpecificValue(JToken valuejs, string path){
-            if(path.Contains("dataset")){
-                JObject o = valuejs.ToObject<JObject>();
-                Console.WriteLine(o);
-                Console.WriteLine(path);
-                JToken res = o.SelectToken(path.Substring(0, path.IndexOf(']') + 1), true);
-                string subPath = path.Substring(path.IndexOf(']') + 2);
-                return res.ToObject<JObject>().ContainsKey(subPath) ? res[subPath].ToString() : "";
-            }
-            JToken jobj = valuejs;
-            if (!(path.Contains('.') || path.Contains('[')))
-                return "";
-            else{
-                string[] arrPath = path.Split('.');
-                int i = 0;
-                string location = "";
-                string num = "";
-                int latest_arr = FindLatsetArray(path);
-                for (i = 0; i < latest_arr; i++)
-                {
-                    if (!arrPath[i].Contains('['))
-                        jobj = jobj[arrPath[i]];
-                    else
-                    {
-                        int index = arrPath[i].Length - 1;
-                        while (char.IsDigit(arrPath[i][index - 1]))
-                            index--;
-                        location = arrPath[i].Substring(0, arrPath[i].IndexOf('['));//arrPath[i].Length - 3);
-                        num = arrPath[i].Substring(arrPath[i].IndexOf('[') + 1, arrPath[i].Length - arrPath[i].LastIndexOf(']'));
-                        if (arrPath[i].Contains("dataset"))
-                        {
-                            jobj = jobj[location]["value"][int.Parse(num)];
-                        } else
-                        {
-                            jobj = jobj[location][int.Parse(num)];
-                        } 
-                        // [int.Parse(arrPath[i][arrPath[i].Length - 2].ToString())];
-                        //jobj = jobj[location][int.Parse(arrPath[i][arrPath[i].Length - 2].ToString())];
-                    }
-                    //location = arrPath[i].Substring(0, arrPath[i].Length - 3);
-                    //jobj = jobj[location][int.Parse(arrPath[i][arrPath[i].Length - 2].ToString())];
-                }
-                if (arrPath.Length == latest_arr || i == latest_arr)
-                {  
-                    if (arrPath[i].Contains('['))
-                    {
-                        location = arrPath[i].Substring(0, arrPath[i].IndexOf('[') != -1 ? arrPath[i].IndexOf('[') : arrPath[i].Length);//arrPath[i].Length - 3);
-                        num = arrPath[i].Substring(arrPath[i].IndexOf('[') + 1, arrPath[i].Length - arrPath[i].LastIndexOf(']'));
-                    }
-                }
-                
-                JArray jarr = new JArray(); 
-                if(location.Contains("dataset")){
-                    jarr =  jobj[location]["value"] as JArray;
-                } else {
-                    jarr =  jobj[location] as JArray;
-                }
-                
-                JToken jo = null;
-                if(jarr.Count() > 1){
-                    jo = jarr[int.Parse(num)];
-                } else {
-                    return jarr.ToString();
-                }
-                int startOfPath = i + 1;
-                List<string> newPath = new List<string>();
-                for(int j = startOfPath; j < arrPath.Length; j++) {
-                    newPath.Add(arrPath[j]);
-                }
-                string newPathString = string.Join(".", newPath);
-                if(jo.ToObject<JObject>().ContainsKey(newPathString)){
-                    jo = jo[newPathString];
-                    return jo.ToString();
-                }
-                for(int j = i + 1; j < arrPath.Length; j++){     
-                    if(jo.ToObject<JObject>().ContainsKey(arrPath[j])) {
-                        if(jo[arrPath[j]].ToString().StartsWith("[")) {
-                            jo = jo[arrPath[j]][0];
-                        } else {
-                            jo = jo[arrPath[j]];
-                        }   
-                    }                    
-                }
-
-                return jo.ToString();
-            }
-        }
-        public static string getValueByPath(JToken valuejs, string path, string subform_end = ""){
-            if(path == "") return "";
-            if(valuejs.ToObject<JObject>().ContainsKey(path)){
-                return valuejs[path].ToString();
-            }
-            bool specific_path = path.Contains(".") && path.Contains("[");
-            if(specific_path){
-                Console.WriteLine("getting specific value of :" + path);
-                return GetSpecificValue(valuejs, path);
-            }
-            string[] c_path = path.Contains(".") ? path.Split('.') : path.Split(','); 
-            string colname = c_path[c_path.Length - 1]; 
-            for(int pathi = 0; pathi <  c_path.Length; pathi++)
-            {
-                if (c_path[pathi] != colname && pathi != 0) {
-                    c_path[pathi] = c_path[pathi] + subform_end;
-                }
-            }
-            JObject valueObject = valuejs.ToObject<JObject>();
-            int len = c_path.Length;
-            JToken current = valuejs;
-            
-
-            for(int i = 0; i < len; i++){ 
-                if(current == null || current.ToString() == "" || current.ToString() == "[]" || current.ToString() == "{}") return "";
-                current = current[c_path[i]] is JArray && current[c_path[i]] != null && current[c_path[i]].Count() > 0 ? current[c_path[i]].FirstOrDefault() : current.ToObject<JObject>().ContainsKey(c_path[i]) ? current[c_path[i]] : null;
-                
-            }
-             
-            return current == null ?  "" : current.ToString();
-            
-        }
-
-        public static void setValueByPath(JToken valuejs,  JToken new_input, string path){
-            if(path == "" || valuejs == null) return; 
-            string[] c_path = path.Split('.'); 
-            string colname = c_path[c_path.Length - 1]; 
-            JObject valueObject = valuejs.ToObject<JObject>();
-            int len = c_path.Length;
-            JToken current = valuejs;
-            int out_new_input = 0;
-            new_input = !(new_input.Type.ToString() == "String") && int.TryParse(new_input.ToString(), out out_new_input) ? int.Parse(new_input.ToString()) : new_input;
-            if(len > 2) {
-                if(valueObject.ContainsKey(c_path[c_path.Length - 2])){
-                           
-                    if(valuejs[c_path[c_path.Length - 2]] == null || valuejs[c_path[c_path.Length - 2]].ToString() == ""){
-                        JObject new_jo = new JObject();
-                        new_jo[colname] = new_input;
-                        valuejs[c_path[c_path.Length - 2]] = new_jo;     
-                                 
-                        return;
-                    }
-                    
-                    if(valuejs[c_path[c_path.Length - 2]].Count() > 1){
-                        for(int k = 0; k < valuejs[c_path[c_path.Length - 2]].Count();k++){
-                            valuejs[c_path[c_path.Length - 2]][k][colname] = new_input;
-                        }   
-                    } else if(valuejs[c_path[c_path.Length - 2]].Count() == 1) {
-                        valuejs[c_path[c_path.Length - 2]].FirstOrDefault()[colname] = new_input;
-                    } 
-                }
-            } else { 
-                if (colname == "") return;
-                
-                if(len > 1 && valueObject.ContainsKey(c_path[len - 2])){
-                    if(valuejs[c_path[len-2]] == null || valuejs[c_path[len - 2]].ToString() == "") {
-                        JObject new_jo = new JObject();
-                        new_jo[colname] = new_input;
-                        valuejs[c_path[c_path.Length - 2]] = new_jo;     
-                        return;
-                    }
-                    
-                    valuejs[c_path[len - 2]][colname] = new_input;
-                    return;
-                } else if(len > 1 && valueObject.ContainsKey(c_path[len - 2])){
-                    
-                    JArray arr = valuejs[c_path[len-2]] as JArray;
-                    arr.Add(new_input);
-                    valuejs[c_path[len - 2]] = arr;
-                }     
-
-                
-                valuejs[colname] = new_input;
-                 
-                
-            }
-        }
-
+        
     }
 }
